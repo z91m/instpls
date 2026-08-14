@@ -4,7 +4,7 @@
 
 - (void)layoutSubviews {
     %orig;
-    NSLog(@"🔥 InstPls: تم تحميل عرض الفيديو!");
+    NSLog(@"InstPls: تم تحميل عرض الفيديو");
 }
 
 %end
