@@ -1,16 +1,25 @@
-name: Build Tweak
+name: Build Tweak (macOS)
 on: [push, workflow_dispatch]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    container:
-      image: randomblock1/theos:latest
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install Theos
+        run: |
+          git clone --recursive https://github.com/theos/theos.git $HOME/theos
+          echo "THEOS=$HOME/theos" >> $GITHUB_ENV
+          echo "$HOME/theos/bin" >> $GITHUB_PATH
+          # ربط SDK الخاص بـ Xcode مع Theos
+          sudo mkdir -p $HOME/theos/sdks
+          sudo ln -sf /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk $HOME/theos/sdks/iPhoneOS.sdk
+          echo "✅ Theos installed with Xcode SDK"
+
       - name: Build tweak
         run: |
+          export THEOS=$HOME/theos
           make package
           ls -la
 
