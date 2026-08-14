@@ -1,5 +1,11 @@
 name: Build Tweak (macOS)
-on: [push, workflow_dispatch]
+on:
+  workflow_dispatch:
+    inputs:
+      ipa_url:
+        description: 'رابط مباشر لملف IPA المفكك'
+        required: true
+        type: string
 
 jobs:
   build:
@@ -7,28 +13,40 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Download IPA
+        run: curl -L -o app.ipa "${{ github.event.inputs.ipa_url }}"
+
       - name: Install Theos
         run: |
           git clone --recursive https://github.com/theos/theos.git $HOME/theos
           echo "THEOS=$HOME/theos" >> $GITHUB_ENV
           echo "$HOME/theos/bin" >> $GITHUB_PATH
-          # ربط SDK الخاص بـ Xcode مع Theos
           sudo mkdir -p $HOME/theos/sdks
           sudo ln -sf /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk $HOME/theos/sdks/iPhoneOS.sdk
-          echo "✅ Theos installed with Xcode SDK"
-
-      - name: Install ldid
-        run: |
-          brew install ldid
 
       - name: Build tweak
         run: |
           export THEOS=$HOME/theos
           make package
-          ls -la
 
-      - name: Upload artifact
+      - name: Extract dylib from deb
+        run: |
+          ar -x *.deb
+          tar -xf data.tar.xz
+          find . -name "*.dylib" -exec cp {} instpls.dylib \;
+
+      - name: Inject dylib into IPA
+        run: |
+          curl -L -o insert_dylib https://github.com/tyilo/insert_dylib/releases/latest/download/insert_dylib
+          chmod +x insert_dylib
+          unzip -q app.ipa -d app_payload
+          APP_PATH=$(find app_payload/Payload -name "*.app" -type d | head -n 1)
+          EXECUTABLE=$(find "$APP_PATH" -type f -perm +111 -print | head -n 1)
+          ./insert_dylib --inplace --all-yes "$(pwd)/instpls.dylib" "$EXECUTABLE"
+          cd app_payload && zip -r ../modified.ipa * && cd ..
+
+      - name: Upload modified IPA
         uses: actions/upload-artifact@v4
         with:
-          name: instpls.deb
-          path: ./packages/*.deb
+          name: Instagram-modified
+          path: modified.ipa
