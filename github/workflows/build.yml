@@ -5,14 +5,35 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Build Tweak
-        uses: Randomblock1/theos-action@v1
-        with:
-          project-name: instpls
-          project-path: .
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git curl build-essential unzip zip libxml2-dev ldid
+
+      - name: Install Theos
+        run: |
+          git clone --recursive https://github.com/theos/theos.git $HOME/theos
+          echo "THEOS=$HOME/theos" >> $GITHUB_ENV
+          echo "$HOME/theos/bin" >> $GITHUB_PATH
+          # تنزيل SDK (نسخة مبسطة)
+          mkdir -p $HOME/theos/sdks
+          curl -L https://github.com/theos/sdks/archive/master.zip -o $HOME/sdks.zip
+          unzip -q $HOME/sdks.zip -d $HOME/theos/sdks
+          mv $HOME/theos/sdks/sdks-master/* $HOME/theos/sdks/
+          rm -rf $HOME/theos/sdks/sdks-master $HOME/sdks.zip
+          echo "تم تثبيت Theos و SDKs"
+
+      - name: Build tweak
+        run: |
+          export THEOS=$HOME/theos
+          make package
+          ls -la
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: instpls.deb
-          path: ./instpls.deb
+          path: ./*.deb
