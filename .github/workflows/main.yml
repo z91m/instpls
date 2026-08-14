@@ -4,34 +4,13 @@ on: [push, workflow_dispatch]
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/theos/theos:latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y git curl build-essential unzip zip libxml2-dev
-          # تثبيت ldid من مصدر خارجي
-          curl -L -o ldid https://github.com/ProcursusTeam/ldid/releases/latest/download/ldid_linux_x86_64
-          chmod +x ldid
-          sudo mv ldid /usr/local/bin/
-
-      - name: Install Theos
-        run: |
-          git clone --recursive https://github.com/theos/theos.git $HOME/theos
-          echo "THEOS=$HOME/theos" >> $GITHUB_ENV
-          echo "$HOME/theos/bin" >> $GITHUB_PATH
-          mkdir -p $HOME/theos/sdks
-          curl -L https://github.com/theos/sdks/archive/master.zip -o $HOME/sdks.zip
-          unzip -q $HOME/sdks.zip -d $HOME/theos/sdks
-          mv $HOME/theos/sdks/sdks-master/* $HOME/theos/sdks/
-          rm -rf $HOME/theos/sdks/sdks-master $HOME/sdks.zip
-          echo "✅ Theos و SDKs تم تثبيتهم بنجاح"
+      - uses: actions/checkout@v4
 
       - name: Build tweak
         run: |
-          export THEOS=$HOME/theos
           make package
           ls -la
 
