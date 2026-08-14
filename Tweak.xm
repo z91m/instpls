@@ -1,21 +1,21 @@
 #import <UIKit/UIKit.h>
 #import <Photos/Photos.h>  // لحفظ الصور والفيديوهات في الألبوم
 
-// --- تعريفات عامة لتجنب أخطاء الترجمة (نخبر المترجم بوجود هذه الكلاسات) ---
+// --- تعريفات عامة لتجنب أخطاء الترجمة ---
 @interface IGFeedPhotoView : UIView
-@property (nonatomic, strong) id media;   // يحتوي على بيانات الوسائط
-@property (nonatomic, strong) id item;    // بديل لـ media في بعض الإصدارات
-- (id)feedItem;                    // دالة لجلب العنصر
+@property (nonatomic, strong) id media;
+@property (nonatomic, strong) id item;
+- (id)feedItem;
 @end
 
 @interface IGCommentCell : UITableViewCell
-@property (nonatomic, strong) UILabel *textLabel;       // النص الأساسي
-@property (nonatomic, strong) UILabel *commentTextLabel; // بديل لـ textLabel
+@property (nonatomic, strong) UILabel *textLabel;
+@property (nonatomic, strong) UILabel *commentTextLabel;
 @end
 
 @interface IGDirectThreadViewController : UIViewController
-- (void)sendReadReceipt;           // دالة إرسال إيصال القراءة
-- (void)sendTypingIndicator;       // دالة إرسال مؤشر الكتابة
+- (void)sendReadReceipt;
+- (void)sendTypingIndicator;
 @end
 
 // ============================================================
@@ -26,10 +26,10 @@
 - (void)layoutSubviews {
     %orig;
     
-    // نضيف الزر مرة واحدة فقط (نتجنب تكراره كل مرة يعاد رسم العرض)
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        UIButton *saveBtn = [UIButton buttonWithType:UIButtonTypeRoundedRect];
+        // تصحيح نوع الزر ليتوافق مع أحدث إصدارات UIKit
+        UIButton *saveBtn = [UIButton buttonWithType:UIButtonTypeSystem];
         [saveBtn setTitle:@"📥 Save" forState:UIControlStateNormal];
         [saveBtn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
         [saveBtn setBackgroundColor:[UIColor colorWithRed:0.0 green:0.5 blue:1.0 alpha:0.8]];
@@ -40,16 +40,14 @@
     });
 }
 
-// دالة الحفظ الجديدة (نستخدم NSURLSession الحديث بدلاً من NSURLConnection)
 - (void)instpls_saveMedia {
-    // 1. محاولة استخراج رابط الوسائط من الكائن الحالي
     id mediaObject = nil;
     if ([self respondsToSelector:@selector(media)]) {
-        mediaObject = [self performSelector:@selector(media)];
+        mediaObject = [self media];
     } else if ([self respondsToSelector:@selector(item)]) {
-        mediaObject = [self performSelector:@selector(item)];
+        mediaObject = [self item];
     } else if ([self respondsToSelector:@selector(feedItem)]) {
-        mediaObject = [self performSelector:@selector(feedItem)];
+        mediaObject = [self feedItem];
     }
     
     if (!mediaObject) {
@@ -57,7 +55,6 @@
         return;
     }
     
-    // 2. محاولة استخراج الرابط (URL) من كائن الوسائط
     NSString *urlString = nil;
     if ([mediaObject respondsToSelector:@selector(imageURL)]) {
         urlString = [mediaObject performSelector:@selector(imageURL)];
@@ -80,23 +77,19 @@
     
     NSLog(@"✅ InstPls: جاري تحميل الوسائط من: %@", url);
     
-    // 3. تحميل البيانات باستخدام NSURLSession (الحديث والأمن)
     NSURLSessionDownloadTask *task = [[NSURLSession sharedSession] downloadTaskWithURL:url completionHandler:^(NSURL *location, NSURLResponse *response, NSError *error) {
         if (error) {
             NSLog(@"❌ InstPls: فشل التحميل: %@", error);
             return;
         }
         
-        // 4. حفظ الملف في ألبوم الصور
         NSString *tempPath = [location path];
         if ([[response MIMEType] hasPrefix:@"video"]) {
-            // حفظ فيديو
             if (UIVideoAtPathIsCompatibleWithSavedPhotosAlbum(tempPath)) {
                 UISaveVideoAtPathToSavedPhotosAlbum(tempPath, nil, nil, nil);
                 NSLog(@"✅ InstPls: تم حفظ الفيديو في الألبوم.");
             }
         } else {
-            // حفظ صورة
             UIImage *image = [UIImage imageWithContentsOfFile:tempPath];
             if (image) {
                 UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil);
@@ -122,19 +115,17 @@
 - (void)instpls_copyComment:(UIGestureRecognizer *)gesture {
     if (gesture.state != UIGestureRecognizerStateBegan) return;
     
-    // محاولة جلب النص من الخلية
     UILabel *label = nil;
     if ([self respondsToSelector:@selector(commentTextLabel)]) {
-        label = [self performSelector:@selector(commentTextLabel)];
+        label = [self commentTextLabel];
     } else if ([self respondsToSelector:@selector(textLabel)]) {
-        label = [self performSelector:@selector(textLabel)];
+        label = [self textLabel];
     }
     
     if (label && [label.text length] > 0) {
         [UIPasteboard generalPasteboard].string = label.text;
         NSLog(@"📋 InstPls: تم نسخ التعليق: %@", label.text);
         
-        // إشعار مرئي للمستخدم (وميض سريع)
         label.backgroundColor = [UIColor yellowColor];
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.3 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
             label.backgroundColor = [UIColor clearColor];
@@ -151,18 +142,16 @@
 %hook IGDirectThreadViewController
 
 - (void)sendReadReceipt {
-    // تعطيل إرسال إيصال القراءة (لا نستدعي %orig)
     NSLog(@"👀 InstPls: تم حظر إرسال إيصال القراءة.");
 }
 
 - (void)sendTypingIndicator {
-    // تعطيل مؤشر الكتابة
     NSLog(@"⌨️ InstPls: تم حظر مؤشر الكتابة.");
 }
 %end
 
 // ============================================================
-// رسالة تأكيد عند تحميل التعديل (تظهر في سجل النظام)
+// رسالة تأكيد عند تحميل التعديل
 // ============================================================
 %ctor {
     NSLog(@"🚀 InstPls: تم تحميل التعديل بنجاح!");
