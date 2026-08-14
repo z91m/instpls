@@ -24,6 +24,10 @@ jobs:
           sudo mkdir -p $HOME/theos/sdks
           sudo ln -sf /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk $HOME/theos/sdks/iPhoneOS.sdk
 
+      - name: Install ldid
+        run: |
+          brew install ldid
+
       - name: Build tweak
         run: |
           export THEOS=$HOME/theos
