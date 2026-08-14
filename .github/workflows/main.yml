@@ -1,20 +1,11 @@
 name: Build Tweak (macOS)
-on:
-  workflow_dispatch:
-    inputs:
-      ipa_url:
-        description: 'رابط مباشر لملف IPA المفكك'
-        required: true
-        type: string
+on: [push, workflow_dispatch]
 
 jobs:
   build:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Download IPA
-        run: curl -L -o app.ipa "${{ github.event.inputs.ipa_url }}"
 
       - name: Install Theos
         run: |
@@ -37,22 +28,16 @@ jobs:
         run: |
           cd packages
           ar -x *.deb
-          tar -xf data.tar.xz
+          if [ -f data.tar.xz ]; then
+            tar -xf data.tar.xz
+          elif [ -f data.tar.gz ]; then
+            tar -xzf data.tar.gz
+          fi
           find . -name "*.dylib" -exec cp {} ../instpls.dylib \;
           cd ..
 
-      - name: Inject dylib into IPA
-        run: |
-          curl -L -o insert_dylib https://github.com/tyilo/insert_dylib/releases/latest/download/insert_dylib
-          chmod +x insert_dylib
-          unzip -q app.ipa -d app_payload
-          APP_PATH=$(find app_payload/Payload -name "*.app" -type d | head -n 1)
-          EXECUTABLE=$(find "$APP_PATH" -type f -perm +111 -print | head -n 1)
-          ./insert_dylib --inplace --all-yes "$(pwd)/instpls.dylib" "$EXECUTABLE"
-          cd app_payload && zip -r ../modified.ipa * && cd ..
-
-      - name: Upload modified IPA
+      - name: Upload dylib Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Instagram-modified
-          path: modified.ipa
+          name: instpls-dylib
+          path: instpls.dylib
