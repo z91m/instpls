@@ -35,9 +35,11 @@ jobs:
 
       - name: Extract dylib from deb
         run: |
+          cd packages
           ar -x *.deb
           tar -xf data.tar.xz
-          find . -name "*.dylib" -exec cp {} instpls.dylib \;
+          find . -name "*.dylib" -exec cp {} ../instpls.dylib \;
+          cd ..
 
       - name: Inject dylib into IPA
         run: |
