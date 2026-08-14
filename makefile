@@ -1,8 +1,11 @@
-target = iphone:latest:14.0
-ARCHS = arm64
-
-TWEAK_NAME = instpls
-instpls_FILES = Tweak.xm
+TARGET := iphone:clang:latest:14.0
+INSTALL_TARGET_PROCESSES = Instagram
 
 include $(THEOS)/makefiles/common.mk
-include $(THEOS)/makefiles/tweak.mk
+
+TWEAK_NAME = instpls
+
+instpls_FILES = Tweak.xm
+instpls_CFLAGS = -fobjc-arc
+
+include $(THEOS_MAKE_PATH)/tweak.mk
