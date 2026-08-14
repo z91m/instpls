@@ -24,17 +24,26 @@ jobs:
           export THEOS=$HOME/theos
           make package
 
-      - name: Extract dylib from deb
+      - name: Extract dylib from deb or obj
         run: |
-          cd packages
-          ar -x *.deb
-          if [ -f data.tar.xz ]; then
-            tar -xf data.tar.xz
-          elif [ -f data.tar.gz ]; then
-            tar -xzf data.tar.gz
+          # البحث المباشر عن أي ملف dylib ناتج عن عملية البناء في المشروع ونسخه باسم instpls.dylib
+          find . -name "*.dylib" ! -path "*/.theos/*" -exec cp {} instpls.dylib \;
+          
+          # إذا لم يتم العثور عليه، نحاول فكه من ملف الـ deb في مجلد packages
+          if [ ! -f instpls.dylib ]; then
+            cd packages
+            ar -x *.deb
+            if [ -f data.tar.xz ]; then
+              tar -xf data.tar.xz
+            elif [ -f data.tar.gz ]; then
+              tar -xzf data.tar.gz
+            fi
+            find . -name "*.dylib" -exec cp {} ../instpls.dylib \;
+            cd ..
           fi
-          find . -name "*.dylib" -exec cp {} ../instpls.dylib \;
-          cd ..
+          
+          # التحقق النهائي من وجود الملف وطباعة مساره
+          ls -la instpls.dylib
 
       - name: Upload dylib Artifact
         uses: actions/upload-artifact@v4
