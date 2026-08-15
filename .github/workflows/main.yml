@@ -26,10 +26,8 @@ jobs:
 
       - name: Extract dylib from deb or obj
         run: |
-          # البحث المباشر عن أي ملف dylib ناتج عن عملية البناء في المشروع ونسخه باسم instpls.dylib
           find . -name "*.dylib" ! -path "*/.theos/*" -exec cp {} instpls.dylib \;
-          
-          # إذا لم يتم العثور عليه، نحاول فكه من ملف الـ deb في مجلد packages
+
           if [ ! -f instpls.dylib ]; then
             cd packages
             ar -x *.deb
@@ -41,8 +39,7 @@ jobs:
             find . -name "*.dylib" -exec cp {} ../instpls.dylib \;
             cd ..
           fi
-          
-          # التحقق النهائي من وجود الملف وطباعة مساره
+
           ls -la instpls.dylib
 
       - name: Upload dylib Artifact
@@ -50,3 +47,9 @@ jobs:
         with:
           name: instpls-dylib
           path: instpls.dylib
+
+      - name: Upload deb Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: instpls-deb
+          path: packages/*.deb
