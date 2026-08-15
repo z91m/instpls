@@ -1,8 +1,9 @@
 Package: com.yourname.instpls
 Name: InstPls
 Version: 0.0.1
-Architecture: iphoneos-arm
+Architecture: iphoneos-arm64
 Description: تجربة تعديل لإنستغرام
 Maintainer: اسمك
 Author: اسمك
 Section: Tweaks
+Depends: mobilesubstrate
