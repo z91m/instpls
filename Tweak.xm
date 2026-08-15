@@ -3,8 +3,11 @@
 
 // ============================================================
 // تعريف عام لتجنب أخطاء الترجمة (زر الحفظ يُضاف على أي خلية صورة بالفييد)
+// ملاحظة: صرّحنا هنا بالميثودات الجديدة (%new) حتى يعرفها الكومبايلر
 // ============================================================
 @interface IGFeedPhotoView : UIView
+- (void)instpls_saveMedia;
+- (void)instpls_flashButtonFeedback:(BOOL)success;
 @end
 
 // ============================================================
@@ -48,7 +51,6 @@
             [fresh addObject:entry];
         }
     }
-    // نحد الحد الأقصى لعدد العناصر حتى لو كلها حديثة
     while (fresh.count > 15) {
         [fresh removeObjectAtIndex:0];
     }
@@ -76,7 +78,7 @@
     if (_entries.count > 0) {
         NSDictionary *last = _entries.lastObject;
         result = last[@"url"];
-        [_entries removeLastObject]; // نستهلكه حتى ما نعيد استخدام نفس الرابط مرتين
+        [_entries removeLastObject];
     }
     [_lock unlock];
     return result;
@@ -86,7 +88,6 @@
 
 // ============================================================
 // دالة فلترة: هل هذا رابط ميديا فعلي من سيرفرات إنستقرام؟
-// ترجع: @"image" أو @"video" أو nil (لو مو ميديا أو مو من CDN إنستقرام)
 // ============================================================
 static NSString * instpls_classifyMediaURL(NSURL *url) {
     if (!url) return nil;
@@ -107,8 +108,6 @@ static NSString * instpls_classifyMediaURL(NSURL *url) {
     for (NSString *ext in videoExts) {
         if ([path hasSuffix:ext]) return @"video";
     }
-    // بعض روابط CDN ما فيها امتداد واضح بالمسار (باراميترات مشفرة)
-    // نتجاهلها حاليًا لتفادي التقاط روابط غير ميديا (زي API calls)
     return nil;
 }
 
