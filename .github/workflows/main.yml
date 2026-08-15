@@ -24,20 +24,29 @@ jobs:
           export THEOS=$HOME/theos
           make package
 
-      - name: Extract dylib from deb or obj
+      - name: Extract dylib from deb
         run: |
-          find . -name "*.dylib" ! -path "*/.theos/*" -exec cp {} instpls.dylib \;
+          brew install dpkg
+
+          echo "محتوى مجلد packages:"
+          ls -la packages || echo "لا يوجد مجلد packages"
+
+          DEB_FILE=$(find packages -name "*.deb" | head -n 1)
+          if [ -z "$DEB_FILE" ]; then
+            echo "❌ لم يتم العثور على ملف deb"
+            exit 1
+          fi
+          echo "✅ تم العثور على: $DEB_FILE"
+
+          mkdir -p extracted
+          dpkg-deb -x "$DEB_FILE" extracted
+
+          find extracted -name "*.dylib" -exec cp {} instpls.dylib \;
 
           if [ ! -f instpls.dylib ]; then
-            cd packages
-            ar -x *.deb
-            if [ -f data.tar.xz ]; then
-              tar -xf data.tar.xz
-            elif [ -f data.tar.gz ]; then
-              tar -xzf data.tar.gz
-            fi
-            find . -name "*.dylib" -exec cp {} ../instpls.dylib \;
-            cd ..
+            echo "❌ لم يتم استخراج dylib من الحزمة"
+            find extracted -type f
+            exit 1
           fi
 
           ls -la instpls.dylib
